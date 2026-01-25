@@ -1,27 +1,13 @@
 <!doctype html>
 <html>
-  <head><meta charset="utf-8"><title>Books</title></head>
+  <head><meta charset="utf-8"><title>Book List</title></head>
   <body>
     <h1>Books</h1>
-
-    <form method="get">
-      {{ form.q.label_tag }} {{ form.q }}
-      <button type="submit">Search</button>
-    </form>
-
-    <p>
-      <a href="{% url 'example_form' %}">Example Form</a> |
-      <a href="{% url 'book_create' %}">Create book</a>
-    </p>
-
     <ul>
       {% for book in books %}
-        <li>
-          <a href="{% url 'book_detail' book.pk %}">{{ book.title }}</a>
-          — {{ book.author }} ({{ book.publication_year }})
-        </li>
+        <li>{{ book.title }}</li>
       {% empty %}
-        <li>No books yet.</li>
+        <li>No books available</li>
       {% endfor %}
     </ul>
   </body>
