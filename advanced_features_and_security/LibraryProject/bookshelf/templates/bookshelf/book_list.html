@@ -9,7 +9,10 @@
       <button type="submit">Search</button>
     </form>
 
-    <p><a href="{% url 'book_create' %}">Create book</a></p>
+    <p>
+      <a href="{% url 'example_form' %}">Example Form</a> |
+      <a href="{% url 'book_create' %}">Create book</a>
+    </p>
 
     <ul>
       {% for book in books %}
