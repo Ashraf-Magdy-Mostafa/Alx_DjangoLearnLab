@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>Books</title></head>
+  <body>
+    <h1>Books</h1>
+
+    <form method="get">
+      {{ form.q.label_tag }} {{ form.q }}
+      <button type="submit">Search</button>
+    </form>
+
+    <p><a href="{% url 'book_create' %}">Create book</a></p>
+
+    <ul>
+      {% for book in books %}
+        <li>
+          <a href="{% url 'book_detail' book.pk %}">{{ book.title }}</a>
+          — {{ book.author }} ({{ book.publication_year }})
+        </li>
+      {% empty %}
+        <li>No books yet.</li>
+      {% endfor %}
+    </ul>
+  </body>
+</html>
