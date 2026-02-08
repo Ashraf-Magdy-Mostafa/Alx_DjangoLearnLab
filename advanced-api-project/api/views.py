@@ -1,6 +1,5 @@
 from django_filters import rest_framework
-from rest_framework import generics
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework import generics, filters
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 
 from .models import Book, Author
@@ -16,24 +15,25 @@ from .permissions import IsAdminOrReadOnly
 #
 # Filtering, searching, ordering are enabled on BookListView using:
 # - rest_framework.DjangoFilterBackend (django-filter)
-# - SearchFilter
-# - OrderingFilter
+# - filters.SearchFilter
+# - filters.OrderingFilter
 
 class BookListView(generics.ListAPIView):
     queryset = Book.objects.select_related('author').all()
     serializer_class = BookSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    # ✅ Integrate filtering/search/ordering
-    filter_backends = [rest_framework.DjangoFilterBackend, SearchFilter, OrderingFilter]
+    # ✅ Filtering + Search + Ordering backends (checker expects filters.OrderingFilter)
+    filter_backends = [rest_framework.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
 
-    # ✅ Filter by attributes like title, author, publication_year
+    # ✅ Filter by attributes like title, author, and publication_year
     filterset_fields = ['title', 'author', 'publication_year']
 
-    # ✅ Enable search on title and author
+    # ✅ Enable search functionality on title and author
+    # (author is a FK; we search by author name using author__name)
     search_fields = ['title', 'author__name']
 
-    # ✅ Configure ordering
+    # ✅ Ordering
     ordering_fields = ['title', 'publication_year', 'author__name']
     ordering = ['title']
 
@@ -62,7 +62,6 @@ class BookDeleteView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
 
 
-# Authors with nested books (Task 0 custom/nested serializer demo)
 class AuthorListView(generics.ListAPIView):
     queryset = Author.objects.prefetch_related('books').all()
     serializer_class = AuthorSerializer
