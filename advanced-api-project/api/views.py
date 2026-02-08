@@ -1,21 +1,14 @@
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .models import Book, Author
 from .serializers import BookSerializer, AuthorSerializer
+from .permissions import IsAdminOrReadOnly
 
 # =========================
 # Generic Views (Task 1)
 # =========================
-# We implement CRUD using DRF generics:
-# - List all books
-# - Retrieve a single book
-# - Create a new book
-# - Update a book
-# - Delete a book
-#
-# Permissions:
-# - Unauthenticated users can read (GET)
-# - Authenticated users can create/update/delete
+# CRUD using DRF generics with role-based permissions:
+# - Read: allowed for everyone
+# - Write: only admin/staff users
 
 class BookListView(generics.ListAPIView):
     queryset = Book.objects.select_related('author').all()
@@ -36,23 +29,22 @@ class BookDetailView(generics.RetrieveAPIView):
 class BookCreateView(generics.CreateAPIView):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
 
 
 class BookUpdateView(generics.UpdateAPIView):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
 
 
 class BookDeleteView(generics.DestroyAPIView):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
 
 
-# Extra: Author list/detail with nested books (Task 0 custom/nested serializer demo)
-
+# Authors with nested books (Task 0 custom/nested serializer demo)
 class AuthorListView(generics.ListAPIView):
     queryset = Author.objects.prefetch_related('books').all()
     serializer_class = AuthorSerializer

@@ -6,8 +6,6 @@ from django.db import models
 # Author -> Book is a one-to-many relationship:
 # - One Author can have many Books
 # - Each Book belongs to exactly one Author
-#
-# These models provide the data structure used by DRF serializers and views.
 
 class Author(models.Model):
     """Represents an author who can have multiple books."""

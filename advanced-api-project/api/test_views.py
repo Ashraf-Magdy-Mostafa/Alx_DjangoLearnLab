@@ -12,6 +12,7 @@ class BookAPITests(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(username='tester', password='pass12345')
+        self.admin = User.objects.create_user(username='admin', password='pass12345', is_staff=True)
 
         self.author_a = Author.objects.create(name='Author A')
         self.author_b = Author.objects.create(name='Author B')
@@ -30,7 +31,7 @@ class BookAPITests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data['title'], 'Alpha')
 
-    def test_create_book_requires_auth(self):
+    def test_create_book_requires_admin(self):
         payload = {
             'title': 'New Book',
             'publication_year': 2021,
@@ -41,30 +42,27 @@ class BookAPITests(APITestCase):
 
         self.client.force_authenticate(user=self.user)
         res2 = self.client.post('/api/books/create/', payload, format='json')
-        self.assertEqual(res2.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(res2.data['title'], 'New Book')
+        self.assertEqual(res2.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_update_book_requires_auth(self):
+        self.client.force_authenticate(user=self.admin)
+        res3 = self.client.post('/api/books/create/', payload, format='json')
+        self.assertEqual(res3.status_code, status.HTTP_201_CREATED)
+
+    def test_update_book_requires_admin(self):
         payload = {'title': 'Alpha Updated', 'publication_year': 2020, 'author': self.author_a.id}
-        res = self.client.put(f'/api/books/{self.book1.id}/update/', payload, format='json')
-        self.assertIn(res.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+        self.client.force_authenticate(user=self.admin)
+        res = self.client.put(f'/api/books/update/{self.book1.id}/', payload, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['title'], 'Alpha Updated')
 
-        self.client.force_authenticate(user=self.user)
-        res2 = self.client.put(f'/api/books/{self.book1.id}/update/', payload, format='json')
-        self.assertEqual(res2.status_code, status.HTTP_200_OK)
-        self.assertEqual(res2.data['title'], 'Alpha Updated')
-
-    def test_delete_book_requires_auth(self):
-        res = self.client.delete(f'/api/books/{self.book1.id}/delete/')
-        self.assertIn(res.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
-
-        self.client.force_authenticate(user=self.user)
-        res2 = self.client.delete(f'/api/books/{self.book1.id}/delete/')
-        self.assertEqual(res2.status_code, status.HTTP_204_NO_CONTENT)
+    def test_delete_book_requires_admin(self):
+        self.client.force_authenticate(user=self.admin)
+        res = self.client.delete(f'/api/books/delete/{self.book1.id}/')
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_publication_year_not_in_future_validation(self):
         future_year = date.today().year + 1
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.admin)
         payload = {
             'title': 'Future Book',
             'publication_year': future_year,
