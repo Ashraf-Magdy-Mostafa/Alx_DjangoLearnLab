@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ object.title }}{% endblock %}
+{% block content %}
+  <article class="card">
+    <h1>{{ object.title }}</h1>
+    <p class="meta">By {{ object.author }} • {{ object.published_date|date:"M d, Y" }}</p>
+
+    {% if object.tags.all %}
+      <p class="tags">
+        {% for tag in object.tags.all %}
+          <a class="tag" href="{% url 'tag_posts' tag.name %}">#{{ tag.name }}</a>
+        {% endfor %}
+      </p>
+    {% endif %}
+
+    <div class="content">
+      {{ object.content|linebreaks }}
+    </div>
+
+    {% if user.is_authenticated and user == object.author %}
+      <div class="actions">
+        <a class="btn" href="{% url 'post_edit' object.pk %}">Edit</a>
+        <a class="btn danger" href="{% url 'post_delete' object.pk %}">Delete</a>
+      </div>
+    {% endif %}
+  </article>
+
+  <section class="card">
+    <h2>Comments</h2>
+
+    {% for c in object.comments.all %}
+      <div class="comment">
+        <p class="meta">{{ c.author }} • {{ c.created_at|date:"M d, Y H:i" }}</p>
+        <p>{{ c.content|linebreaks }}</p>
+        {% if user.is_authenticated and user == c.author %}
+          <div class="actions">
+            <a class="btn" href="{% url 'comment_edit' c.pk %}">Edit</a>
+            <a class="btn danger" href="{% url 'comment_delete' c.pk %}">Delete</a>
+          </div>
+        {% endif %}
+      </div>
+    {% empty %}
+      <p>No comments yet.</p>
+    {% endfor %}
+
+    {% if user.is_authenticated %}
+      <h3>Add a comment</h3>
+      <form class="card-inner" method="post" action="{% url 'comment_create' object.pk %}">
+        {% csrf_token %}
+        {{ comment_form.as_p }}
+        <button type="submit">Post comment</button>
+      </form>
+    {% else %}
+      <p><a href="{% url 'login' %}">Login</a> to comment.</p>
+    {% endif %}
+  </section>
+{% endblock %}

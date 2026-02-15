@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Tag: {{ tag_name }}{% endblock %}
+{% block content %}
+  <h1>Posts tagged: #{{ tag_name }}</h1>
+  {% if posts %}
+    <div class="grid">
+      {% for post in posts %}
+        <article class="card">
+          <h2><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></h2>
+          <p class="meta">By {{ post.author }} • {{ post.published_date|date:"M d, Y" }}</p>
+          <p>{{ post.content|truncatechars:180 }}</p>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No posts for this tag.</p>
+  {% endif %}
+{% endblock %}
