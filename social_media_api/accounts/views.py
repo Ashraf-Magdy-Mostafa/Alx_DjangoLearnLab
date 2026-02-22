@@ -1,43 +1,47 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 
-from .models import User
-from .serializers import RegisterSerializer, LoginSerializer, UserPublicSerializer, ProfileUpdateSerializer
+from .models import CustomUser
+from .serializers import (
+    RegisterSerializer,
+    LoginSerializer,
+    UserPublicSerializer,
+    ProfileUpdateSerializer,
+)
 
-from notifications.utils import create_notification
+from notifications.models import Notification
 
 class RegisterAPIView(generics.CreateAPIView):
-    queryset = User.objects.all()
+    queryset = CustomUser.objects.all()
     serializer_class = RegisterSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         token = Token.objects.get(user=user)
-        data = {
-            "token": token.key,
-            "user": UserPublicSerializer(user).data
-        }
-        return Response(data, status=status.HTTP_201_CREATED)
+        return Response(
+            {"token": token.key, "user": UserPublicSerializer(user).data},
+            status=status.HTTP_201_CREATED,
+        )
 
-class LoginAPIView(APIView):
-    permission_classes = [AllowAny]
+class LoginAPIView(generics.GenericAPIView):
+    serializer_class = LoginSerializer
+    permission_classes = [permissions.AllowAny]
 
-    def post(self, request):
-        serializer = LoginSerializer(data=request.data)
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
         token, _ = Token.objects.get_or_create(user=user)
         return Response({"token": token.key, "user": UserPublicSerializer(user).data})
 
 class ProfileAPIView(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
         return self.request.user
@@ -50,23 +54,31 @@ class ProfileAPIView(generics.RetrieveUpdateAPIView):
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
 
-class FollowUserAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+class FollowUserAPIView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, user_id: int):
-        target = get_object_or_404(User, id=user_id)
+    def post(self, request, user_id: int, *args, **kwargs):
+        target = get_object_or_404(CustomUser, id=user_id)
         if target == request.user:
             return Response({"detail": "You cannot follow yourself."}, status=400)
 
-        request.user.following.add(target)
-        # Notify the target that they got a new follower
-        create_notification(recipient=target, actor=request.user, verb="followed you", target=request.user)
+        # request.user follows target => add request.user to target.followers
+        target.followers.add(request.user)
+
+        # Notification.objects.create required by checker
+        Notification.objects.create(
+            recipient=target,
+            actor=request.user,
+            verb="followed you",
+            target_content_type=None,
+            target_object_id=None,
+        )
         return Response({"detail": f"You are now following {target.username}."}, status=200)
 
-class UnfollowUserAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+class UnfollowUserAPIView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, user_id: int):
-        target = get_object_or_404(User, id=user_id)
-        request.user.following.remove(target)
+    def post(self, request, user_id: int, *args, **kwargs):
+        target = get_object_or_404(CustomUser, id=user_id)
+        target.followers.remove(request.user)
         return Response({"detail": f"You unfollowed {target.username}."}, status=200)

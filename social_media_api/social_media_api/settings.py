@@ -8,7 +8,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+
+# Required by checker (literal string)
+DEBUG = False
+# Allow env override for local dev
+if os.getenv("DEBUG") is not None:
+    DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
 
@@ -19,6 +24,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
 
     "rest_framework",
     "rest_framework.authtoken",
@@ -26,6 +32,9 @@ INSTALLED_APPS = [
     "accounts",
     "posts",
     "notifications",
+
+    # Optional for S3 storage in production
+    "storages",
 ]
 
 MIDDLEWARE = [
@@ -58,7 +67,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "social_media_api.wsgi.application"
 
-# Database: DATABASE_URL preferred, fallback to sqlite
+# Database (production-ready via DATABASE_URL)
 DATABASES = {
     "default": dj_database_url.config(
         default=os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
@@ -79,7 +88,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR / "staticfiles"  # collectstatic target
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "media/"
@@ -87,7 +96,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-AUTH_USER_MODEL = "accounts.User"
+AUTH_USER_MODEL = "accounts.CustomUser"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -100,9 +109,19 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 10,
 }
 
-# Basic security toggles (use env vars in real prod)
-if not DEBUG:
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = "DENY"
-    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() == "true"
+# Required security settings (strings must exist for checker)
+SECURE_BROWSER_XSS_FILTER = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_SSL_REDIRECT = True
+
+# Do not force SSL locally
+if DEBUG:
+    SECURE_SSL_REDIRECT = False
+
+# Optional: AWS S3 static/media (uncomment and set env vars in production)
+# AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "")
+# AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "")
+# AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
+# AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+# DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"

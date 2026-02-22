@@ -38,20 +38,20 @@ Base path:
 - `http://127.0.0.1:8000/api/`
 
 ### Register (returns token)
-`POST /api/accounts/register/`
+`POST /api/accounts/register`
 ```json
 { "username":"ashraf", "password":"pass1234", "email":"a@b.com" }
 ```
 
 ### Login (returns token)
-`POST /api/accounts/login/`
+`POST /api/accounts/login`
 ```json
 { "username":"ashraf", "password":"pass1234" }
 ```
 
 Use the token:
 ```bash
-curl -H "Authorization: Token <TOKEN>" http://127.0.0.1:8000/api/accounts/profile/
+curl -H "Authorization: Token <TOKEN>" http://127.0.0.1:8000/api/accounts/profile
 ```
 
 ---
@@ -59,10 +59,10 @@ curl -H "Authorization: Token <TOKEN>" http://127.0.0.1:8000/api/accounts/profil
 ## 3) Core Endpoints (Summary)
 
 ### Accounts
-- `POST  /api/accounts/register/`
-- `POST  /api/accounts/login/`
-- `GET   /api/accounts/profile/`
-- `PATCH /api/accounts/profile/`
+- `POST  /api/accounts/register`
+- `POST  /api/accounts/login`
+- `GET   /api/accounts/profile`
+- `PATCH /api/accounts/profile`
 - `POST  /api/accounts/follow/<user_id>/`
 - `POST  /api/accounts/unfollow/<user_id>/`
 
