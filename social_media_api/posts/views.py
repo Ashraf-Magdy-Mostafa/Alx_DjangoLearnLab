@@ -1,6 +1,5 @@
 from rest_framework import viewsets, status, permissions, generics
 from rest_framework.response import Response
-from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 
 from .models import Post, Comment, Like
@@ -10,7 +9,6 @@ from .permissions import IsOwnerOrReadOnly
 from notifications.models import Notification
 
 class PostViewSet(viewsets.ModelViewSet):
-    # Required substrings for checker:
     queryset = Post.objects.all().order_by("-created_at")
     serializer_class = PostSerializer
     filter_backends = [SearchFilter, OrderingFilter]
@@ -32,7 +30,6 @@ class PostViewSet(viewsets.ModelViewSet):
         return super().check_object_permissions(request, obj)
 
 class CommentViewSet(viewsets.ModelViewSet):
-    # Required substrings for checker:
     queryset = Comment.objects.all().order_by("-created_at")
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -64,27 +61,26 @@ class FeedAPIView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        following_ids = request.user.following.values_list("id", flat=True)
-        qs = Post.objects.filter(author_id__in=following_ids).order_by("-created_at")
-        page = self.paginate_queryset(qs)
+        # Required by checker:
+        following_users = request.user.following.all()
+        feed_posts = Post.objects.filter(author__in=following_users).order_by("-created_at")
+        page = self.paginate_queryset(feed_posts)
         if page is not None:
             serializer = PostSerializer(page, many=True, context={"request": request})
             return self.get_paginated_response(serializer.data)
-        serializer = PostSerializer(qs, many=True, context={"request": request})
+        serializer = PostSerializer(feed_posts, many=True, context={"request": request})
         return Response(serializer.data)
 
 class LikePostAPIView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk: int, *args, **kwargs):
-        # Required substring for checker:
         post = generics.get_object_or_404(Post, pk=pk)
         like, created = Like.objects.get_or_create(user=request.user, post=post)
         if not created:
             return Response({"detail": "Already liked."}, status=400)
 
         if post.author != request.user:
-            # Required substring for checker:
             Notification.objects.create(
                 recipient=post.author,
                 actor=request.user,

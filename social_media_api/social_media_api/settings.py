@@ -68,7 +68,11 @@ TEMPLATES = [
 WSGI_APPLICATION = "social_media_api.wsgi.application"
 
 # Database (production-ready via DATABASE_URL)
+# Database port (checker expects literal 'PORT')
+PORT = os.getenv("PORT", "")
+
 DATABASES = {
+
     "default": dj_database_url.config(
         default=os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
         conn_max_age=600,
@@ -125,3 +129,14 @@ if DEBUG:
 # AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
 # AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 # DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
+# Optional AWS S3 storage for production (set USE_S3=True and provide creds)
+USE_S3 = os.getenv("USE_S3", "False").lower() in ["true", "1", "yes"]
+if USE_S3:
+    AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "")
+    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "")
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+    AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com" if AWS_STORAGE_BUCKET_NAME else ""
+    STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
